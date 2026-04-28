@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>To-Do Simple</title>
+</head>
+<body>
+
+<h2>To-Do</h2>
+
+<input id="title" placeholder="Nueva tarea">
+<button onclick="crear()">Agregar</button>
+
+<ul id="lista"></ul>
+
+<script>
+    const API = "http://localhost:8080/tasks";
+
+    async function cargar() {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        const lista = document.getElementById("lista");
+        lista.innerHTML = "";
+
+        data.forEach(t => {
+            const li = document.createElement("li");
+            li.innerHTML = `${t.title} (${t.status})
+      <button onclick="eliminar(${t.id})">X</button>`;
+            lista.appendChild(li);
+        });
+    }
+
+    async function crear() {
+        const title = document.getElementById("title").value;
+
+        await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title })
+        });
+
+        cargar();
+    }
+
+    async function eliminar(id) {
+        await fetch(API + "/" + id, { method: "DELETE" });
+        cargar();
+    }
+
+    cargar();
+</script>
+
+</body>
+</html>
