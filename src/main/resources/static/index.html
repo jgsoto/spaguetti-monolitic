@@ -1,53 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>To-Do Simple</title>
+    <title>Simple To-Do</title>
 </head>
 <body>
 
-<h2>To-Do</h2>
+<h2>To-Do List</h2>
 
-<input id="title" placeholder="Nueva tarea">
-<button onclick="crear()">Agregar</button>
+<input id="taskInput" placeholder="New task">
+<button onclick="createTask()">Add</button>
 
-<ul id="lista"></ul>
+<ul id="taskList"></ul>
 
 <script>
-    const API = "http://localhost:8080/tasks";
+    const API_URL = "http://localhost:8080/tasks";
 
-    async function cargar() {
-        const res = await fetch(API);
-        const data = await res.json();
+    async function loadTasks() {
+        const response = await fetch(API_URL);
+        const tasks = await response.json();
 
-        const lista = document.getElementById("lista");
-        lista.innerHTML = "";
+        const list = document.getElementById("taskList");
+        list.innerHTML = "";
 
-        data.forEach(t => {
-            const li = document.createElement("li");
-            li.innerHTML = `${t.title} (${t.status})
-      <button onclick="eliminar(${t.id})">X</button>`;
-            lista.appendChild(li);
+        tasks.forEach(task => {
+            const listItem = createTaskElement(task);
+            list.appendChild(listItem);
         });
     }
 
-    async function crear() {
-        const title = document.getElementById("title").value;
+    function createTaskElement(task) {
+        const li = document.createElement("li");
 
-        await fetch(API, {
+        li.innerHTML = `
+            ${task.title} (${task.status})
+            <button onclick="markAsCompleted(${task.id})">Done</button>
+            <button onclick="editTask(${task.id})">Edit</button>
+            <button onclick="deleteTask(${task.id})">Delete</button>
+        `;
+
+        return li;
+    }
+
+    async function createTask() {
+        const input = document.getElementById("taskInput");
+        const title = input.value.trim();
+
+        if (!title) return;
+
+        await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ title })
         });
 
-        cargar();
+        input.value = "";
+        loadTasks();
     }
 
-    async function eliminar(id) {
-        await fetch(API + "/" + id, { method: "DELETE" });
-        cargar();
+    async function deleteTask(id) {
+        await fetch(`${API_URL}/${id}`, {
+            method: "DELETE"
+        });
+
+        loadTasks();
     }
 
-    cargar();
+    async function markAsCompleted(id) {
+        await fetch(`${API_URL}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "COMPLETED" })
+        });
+
+        loadTasks();
+    }
+
+    async function editTask(id) {
+        const newTitle = prompt("Enter new task title:");
+
+        if (!newTitle) return;
+
+        await fetch(`${API_URL}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: newTitle.trim() })
+        });
+
+        loadTasks();
+    }
+
+    loadTasks();
 </script>
 
 </body>
